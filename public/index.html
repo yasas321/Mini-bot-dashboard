@@ -218,13 +218,26 @@
                 <option value="false">❌ Disabled</option>
             </select>
         </div>
+
+        <div class="input-group">
+            <label>Auto Like Status</label>
+            <select id="autolike">
+                <option value="true">❤️ Enabled</option>
+                <option value="false">❌ Disabled</option>
+            </select>
+        </div>
         
         <button onclick="save()" id="saveBtn">Save Changes</button>
         <button onclick="logout()" style="background: linear-gradient(45deg, #ff416c, #ff4b2b); margin-top: 15px;">Logout</button>
     </div>
 
     <script>
+        // 👇👇👇 වැදගත්: මෙතනට ඔයාගේ RENDER LINK එක දාන්න (අගට / දාන්න එපා)
+        const BASE_URL = "https://whatsapp-bot-project-vnnq.onrender.com"; 
+        // 👆👆👆
+
         let myNum = "";
+        let myPass = ""; // Store password to use when saving
 
         async function login() {
             const btn = document.getElementById('loginBtn');
@@ -244,7 +257,7 @@
             btn.classList.add('loading');
 
             try {
-                const res = await fetch('/api/login', { // Changed to /api/login to match server
+                const res = await fetch(`${BASE_URL}/api/login`, { 
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ number: myNum, password: pass })
@@ -253,18 +266,20 @@
                 const data = await res.json();
                 
                 if(data.success) {
+                    myPass = pass; // Save password for updates
                     document.getElementById('login').classList.add('hidden');
                     document.getElementById('panel').classList.remove('hidden');
                     
                     // Populate values
                     if(data.config.WORK_TYPE) document.getElementById('wtype').value = data.config.WORK_TYPE;
                     if(data.config.AUTO_VIEW_STATUS) document.getElementById('autoview').value = data.config.AUTO_VIEW_STATUS;
+                    if(data.config.AUTO_LIKE_STATUS) document.getElementById('autolike').value = data.config.AUTO_LIKE_STATUS;
                 } else {
-                    alert("🚫 Login Failed: Invalid Number or Password");
+                    alert("🚫 Login Failed: " + (data.message || "Invalid Details"));
                 }
             } catch (error) {
-                alert("Server Error! Make sure bot is running.");
-                console.error(error);
+                console.error("Login Error:", error);
+                alert("Server Error! Render ලින්ක් එක හරිද බලන්න. බොටා Online ද බලන්න.");
             } finally {
                 btn.innerText = "Login Dashboard";
                 btn.classList.remove('loading');
@@ -278,25 +293,20 @@
 
             const settings = {
                 WORK_TYPE: document.getElementById('wtype').value,
-                AUTO_VIEW_STATUS: document.getElementById('autoview').value
+                AUTO_VIEW_STATUS: document.getElementById('autoview').value,
+                AUTO_LIKE_STATUS: document.getElementById('autolike').value
             };
 
             try {
-                // We need password again for the save route usually, keeping it simple as per original
-                // Assuming session or relying on just number for this simple version, 
-                // BUT better to pass password if API requires it. 
-                // Since original code structure didn't store password globally, let's grab it from input again or just send settings.
-                // NOTE: Based on your previous server code, /api/update-settings needs password.
-                const pass = document.getElementById('pass').value;
-
-                await fetch('/api/update-settings', { // Changed to match server route
+                await fetch(`${BASE_URL}/api/update-settings`, { 
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ number: myNum, password: pass, newSettings: settings })
+                    body: JSON.stringify({ number: myNum, password: myPass, newSettings: settings })
                 });
                 alert("✅ Settings Saved Successfully!");
             } catch (error) {
-                alert("❌ Save Failed!");
+                console.error("Save Error:", error);
+                alert("❌ Save Failed! Connection Lost.");
             } finally {
                 btn.innerText = "Save Changes";
                 btn.classList.remove('loading');
